@@ -1,0 +1,98 @@
+buildscript {
+    ext {
+        springBootVersion = '2.5.3'
+    }
+    repositories {
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath('com.bmuschko:gradle-docker-plugin:7.1.0')
+        classpath('gradle.plugin.com.gorylenko.gradle-git-properties:gradle-git-properties:1.5.2')
+        classpath('gradle.plugin.com.google.cloud.artifactregistry:artifactregistry-gradle-plugin:2.1.1')
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'idea'
+apply plugin: 'com.bmuschko.docker-spring-boot-application'
+apply plugin: 'com.gorylenko.gradle-git-properties'
+
+version = '0.0.1-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven { url "artifactregistry://us-central1-maven.pkg.dev/fine-serenity-317913/iima-maven-repository-1" }
+}
+
+dependencies {
+    compile('org.springframework.boot:spring-boot-starter-data-jpa')
+    compile('org.springframework.boot:spring-boot-starter-data-rest')
+    compile('org.springframework.boot:spring-boot-starter-actuator')
+    compile('org.springframework.boot:spring-boot-starter-web')
+    compile('org.springframework.cloud:spring-cloud-starter-bootstrap')
+    compile('org.springframework.cloud:spring-cloud-starter-netflix-eureka-client')
+    compile('org.springframework.cloud:spring-cloud-starter-config')
+    compile('org.springframework.boot:spring-boot-starter-aop')
+    compile('org.springframework.retry:spring-retry')
+    compile('org.flywaydb:flyway-core')
+    compile group: 'org.apache.jclouds', name: 'jclouds-all', version: '2.3.0'
+    compile group: 'org.apache.jclouds.api', name: 'filesystem', version: '2.3.0'
+    compile group: 'commons-io', name: 'commons-io', version: '2.5'
+    compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.5'
+
+    /*
+     * Required for Java 9 compatibility
+     */
+    compile group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.0'
+
+    /*
+     * guice-assistedinject is required to override a conflict between Spring Data Dalston (including versions after)
+     * and jclouds.
+     */
+    compile group: 'com.google.inject.extensions', name: 'guice-assistedinject', version: '4.0'
+
+    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: '2.8.9'
+    runtime('org.postgresql:postgresql')
+    runtime('com.h2database:h2')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:2020.0.3"
+    }
+}
+
+idea {
+    project {
+        languageLevel = '1.8'
+    }
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+jar {
+    enabled = false
+}
+
+test {
+    useJUnitPlatform()
+}
+
+jar {
+    enabled = false
+}
+
+docker {
+    springBootApplication {
+        baseImage = 'amazoncorretto:8'
+        images = ["projective-software/" + "ps-" + jar.baseName + ":latest"]
+    }
+}
